@@ -1,0 +1,25 @@
+# containerlab runtime artifacts
+clab-*/
+*.clab.yml.bak
+.tmp/
+*.log
+
+# containerlab generated inventory / state
+ansible-inventory.yml
+topology-data.json
+authorized_keys
+.gitea/
+
+# editors / OS
+.vscode/
+.idea/
+*.swp
+.DS_Store
+Thumbs.db
+
+# never commit real captures or secrets
+*.pcap
+*.cap
+secrets/
+*.key
+*.pem

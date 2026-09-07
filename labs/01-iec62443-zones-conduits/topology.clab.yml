@@ -1,0 +1,73 @@
+# IEC 62443 zones and conduits - Purdue-model segmentation demo
+#
+# A single firewall node routes between five zones (one host each) and enforces a
+# deny-by-default conduit policy. Traffic is only permitted between ADJACENT Purdue
+# levels, and only on the service ports a real plant would open.
+#
+#   field (L0/L1) <-> control (L2) <-> ops (L3) <-> idmz (L3.5) <-> enterprise (L4)
+#
+# All addressing is synthetic (RFC 1918). Nothing here comes from a real network.
+
+name: ot-iec62443
+
+topology:
+  kinds:
+    linux:
+      image: wbitt/network-multitool:latest   # bundles bash, iproute2, ncat, iptables
+
+  nodes:
+    # ---- Firewall / conduit enforcement point --------------------------------
+    fw:
+      kind: linux
+      binds:
+        - configs/fw-init.sh:/fw-init.sh:ro
+      exec:
+        - bash /fw-init.sh
+
+    # ---- Zone hosts ----------------------------------------------------------
+    # Level 4 - Enterprise / business network
+    enterprise:
+      kind: linux
+      exec:
+        - ip addr add 10.40.0.10/24 dev eth1
+        - ip route replace default via 10.40.0.1
+        - ip link set eth1 up
+
+    # Level 3.5 - Industrial DMZ (data broker, patch/AV, remote-access jump)
+    idmz:
+      kind: linux
+      exec:
+        - ip addr add 10.35.0.10/24 dev eth1
+        - ip route replace default via 10.35.0.1
+        - ip link set eth1 up
+
+    # Level 3 - Site operations (historian, MES)
+    ops:
+      kind: linux
+      exec:
+        - ip addr add 10.30.0.10/24 dev eth1
+        - ip route replace default via 10.30.0.1
+        - ip link set eth1 up
+
+    # Level 2 - Supervisory control (HMI, SCADA)
+    control:
+      kind: linux
+      exec:
+        - ip addr add 10.20.0.10/24 dev eth1
+        - ip route replace default via 10.20.0.1
+        - ip link set eth1 up
+
+    # Level 0/1 - Field / basic control (PLC, sensors, actuators)
+    field:
+      kind: linux
+      exec:
+        - ip addr add 10.10.0.10/24 dev eth1
+        - ip route replace default via 10.10.0.1
+        - ip link set eth1 up
+
+  links:
+    - endpoints: ["fw:eth1", "enterprise:eth1"]   # fw 10.40.0.1
+    - endpoints: ["fw:eth2", "idmz:eth1"]          # fw 10.35.0.1
+    - endpoints: ["fw:eth3", "ops:eth1"]           # fw 10.30.0.1
+    - endpoints: ["fw:eth4", "control:eth1"]       # fw 10.20.0.1
+    - endpoints: ["fw:eth5", "field:eth1"]         # fw 10.10.0.1

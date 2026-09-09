@@ -1,4 +1,6 @@
 #!/bin/bash
+# Ensure iptables is present in the container (no-op if already installed).
+apk add --no-cache iptables >/dev/null 2>&1 || true
 # ============================================================================
 # IEC 62443 conduit policy - deny-by-default, adjacent-only permits
 # ============================================================================
